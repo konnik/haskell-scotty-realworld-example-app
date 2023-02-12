@@ -5,7 +5,7 @@ import Control.Monad.Except
 import Feature.Article.Types
 import Feature.Auth.Types
 import Feature.Common.Types
-import qualified Web.Slug as WSlug
+import qualified Text.Slugify
 import Data.Convertible (convert)
 import System.Posix.Types (EpochTime)
 
@@ -43,7 +43,7 @@ genSlug' title uId = genSlug title uId . convert <$> currentTime
 
 genSlug :: Text -> Integer -> EpochTime -> Text
 genSlug title userId unixTs = 
-  maybe "invalidSlug" WSlug.unSlug $ WSlug.mkSlug $ unwords [tshow userId, tshow unixTs, title]
+  Text.Slugify.slugify $ unwords [tshow userId, tshow unixTs, title]
 
 deleteArticle :: (ArticleRepo m) => CurrentUser -> Slug -> m (Either ArticleError ())
 deleteArticle (_, curUserId) slug = runExceptT $ do

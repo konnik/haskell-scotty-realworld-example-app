@@ -16,7 +16,11 @@ resolveToken token = runExceptT $ do
   eitherJwt <- lift $ decode jwks (Just $ JwsEncoding RS256) (encodeUtf8 token)
   curTime <- liftIO getPOSIXTime
   userId <- either throwError return $ do
-    Jws (_, claimsRaw) <- first (TokenErrorMalformed . show) eitherJwt
+    x <- first (TokenErrorMalformed . show) eitherJwt
+    let claimsRaw = case x of
+          Jws (_, claimsRaw2) -> claimsRaw2
+          other -> error $ "oväntad jwt-typ: " <> show other
+
     jwtClaims <- first TokenErrorMalformed $ Aeson.eitherDecode $ fromStrict claimsRaw
     let (IntDate expiredAt) = fromMaybe (IntDate curTime) $ jwtExp jwtClaims
     when (expiredAt < curTime) $ Left TokenErrorExpired
