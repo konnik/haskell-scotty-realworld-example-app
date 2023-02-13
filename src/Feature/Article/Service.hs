@@ -17,56 +17,58 @@ getFeed curUser =
   findArticles Nothing (Just True) (Just curUser) (ArticleFilter Nothing Nothing Nothing)
 
 getArticle :: (ArticleRepo m) => Maybe CurrentUser -> Slug -> m (Either ArticleError Article)
-getArticle mayCurUser slug = runExceptT $ do
-  result <- lift $ findArticles (Just slug) Nothing mayCurUser (ArticleFilter Nothing Nothing Nothing) (Pagination 1 0)
+getArticle mayCurUser slug' = runExceptT $ do
+  result <- lift $ findArticles (Just slug') Nothing mayCurUser (ArticleFilter Nothing Nothing Nothing) (Pagination 1 0)
   case result of
-    [article] -> return article
-    _ -> throwError $ ArticleErrorNotFound slug
+    [article'] -> return article'
+    _ -> throwError $ ArticleErrorNotFound slug'
 
 createArticle :: (ArticleRepo m, TimeRepo m) => CurrentUser -> CreateArticle -> m (Either ArticleError Article)
 createArticle curUser@(_, curUserId) param = do
-  slug <- genSlug' (createArticleTitle param) curUserId
-  addArticle curUserId param slug
-  getArticle (Just curUser) slug
- 
+--  slug <- genSlug' (createArticleTitle param) curUserId
+  _slug <- genSlug' ((\(CreateArticle _title _ _ _)->_title) param) curUserId
+  addArticle curUserId param _slug
+  getArticle (Just curUser) _slug
+
 updateArticle :: (ArticleRepo m, TimeRepo m) => CurrentUser -> Slug -> UpdateArticle -> m (Either ArticleError Article)
-updateArticle curUser slug param = runExceptT $ do
-  ExceptT $ validateArticleOwnedBy (snd curUser) slug
-  newSlug <- case updateArticleTitle param of
-    Nothing -> return slug
-    Just newTitle -> lift $ genSlug' newTitle (snd curUser)
-  lift $ updateArticleBySlug slug param newSlug
+updateArticle curUser slug' param = runExceptT $ do
+  ExceptT $ validateArticleOwnedBy (snd curUser) slug'
+--  newSlug <- case updateArticleTitle param of
+  newSlug <- case (\(UpdateArticle title' _ _) -> title') param of
+                 Nothing -> return slug'
+                 Just newTitle -> lift $ genSlug' newTitle (snd curUser)
+  lift $ updateArticleBySlug slug' param newSlug
   ExceptT $ getArticle (Just curUser) newSlug
 
 genSlug' :: (TimeRepo m) => Text -> Integer -> m Text
-genSlug' title uId = genSlug title uId . convert <$> currentTime
+genSlug' title' uId = genSlug title' uId . convert <$> currentTime
 
 genSlug :: Text -> Integer -> EpochTime -> Text
-genSlug title userId unixTs = 
-  Text.Slugify.slugify $ unwords [tshow userId, tshow unixTs, title]
+genSlug title' userId unixTs =
+  Text.Slugify.slugify $ unwords [tshow userId, tshow unixTs, title']
 
 deleteArticle :: (ArticleRepo m) => CurrentUser -> Slug -> m (Either ArticleError ())
-deleteArticle (_, curUserId) slug = runExceptT $ do
-  ExceptT $ validateArticleOwnedBy curUserId slug
-  lift $ deleteArticleBySlug slug
+deleteArticle (_, curUserId) slug' = runExceptT $ do
+  ExceptT $ validateArticleOwnedBy curUserId slug'
+  lift $ deleteArticleBySlug slug'
 
 validateArticleOwnedBy :: (ArticleRepo m) => UserId -> Slug -> m (Either ArticleError ())
-validateArticleOwnedBy uId slug = runExceptT $ do
-  result <- lift $ isArticleOwnedBy uId slug
+validateArticleOwnedBy uId slug' = runExceptT $ do
+  result <- lift $ isArticleOwnedBy uId slug'
   case result of
-    Nothing -> throwError $ ArticleErrorNotFound slug
-    Just False -> throwError $ ArticleErrorNotAllowed slug
+    Nothing -> throwError $ ArticleErrorNotFound slug'
+    Just False -> throwError $ ArticleErrorNotAllowed slug'
     _ -> return ()
 
 favoriteArticle :: (ArticleRepo m) => CurrentUser -> Slug -> m (Either ArticleError Article)
-favoriteArticle curUser@(_, curUserId) slug = do
-  favoriteArticleBySlug curUserId slug
-  getArticle (Just curUser) slug
+favoriteArticle curUser@(_, curUserId) slug' = do
+  favoriteArticleBySlug curUserId slug'
+  getArticle (Just curUser) slug'
 
 unfavoriteArticle :: (ArticleRepo m) => CurrentUser -> Slug -> m (Either ArticleError Article)
-unfavoriteArticle curUser@(_, curUserId) slug = do
-  unfavoriteArticleBySlug curUserId slug
-  getArticle (Just curUser) slug
+unfavoriteArticle curUser@(_, curUserId) slug' = do
+  unfavoriteArticleBySlug curUserId slug'
+  getArticle (Just curUser) slug'
 
 class (Monad m) => ArticleRepo m where
   findArticles :: Maybe Slug -> Maybe Bool -> Maybe CurrentUser
@@ -82,6 +84,6 @@ class (Monad m) => ArticleRepo m where
 
 class (Monad m) => TimeRepo m where
   currentTime :: m UTCTime
-  
+
 class (Monad m) => TagRepo m where
   allTags :: m (Set Tag)

@@ -96,33 +96,33 @@ getArticles :: (RW r m) => Maybe Token -> ArticleFilter -> Pagination -> m (Eith
 getArticles mayToken filterParam pagination = runExceptT $ do
   url <- buildUrl "/articles"
   let opts = defaults & mayAuthHeader mayToken & paginate pagination & articleFilter filterParam
-  articlesWrapperArticles <$> exec (getWith opts url)
+  articles <$> exec (getWith opts url)
 
 getFeed :: (RW r m) => Token -> Pagination -> m (Either (Err ArticleError) [Article])
 getFeed token pagination = runExceptT $ do
   url <- buildUrl "/articles/feed"
   let opts = defaults & authHeader token & paginate pagination
-  articlesWrapperArticles <$> exec (getWith opts url)
+  articles <$> exec (getWith opts url)
 
 getArticle :: (RW r m) => Maybe Token -> Slug -> m (Either (Err ArticleError) Article)
 getArticle mayToken slug = runExceptT $ do
   url <- buildUrl $ "/articles/" <> unpack slug
   let opts = defaults & mayAuthHeader mayToken
-  articleWrapperArticle <$> exec (getWith opts url)
+  article <$> exec (getWith opts url)
 
 createArticle :: (RW r m) => Token -> CreateArticle -> m (Either (Err ArticleError) Article)
 createArticle token arg = runExceptT $ do
   url <- buildUrl "/articles"
   let opts = defaults & authHeader token
   let body = Aeson.toJSON $ ArticleWrapper arg
-  articleWrapperArticle <$> exec (postWith opts url body)
+  article <$> exec (postWith opts url body)
 
 updateArticle :: (RW r m) => Token -> Slug -> UpdateArticle -> m (Either (Err ArticleError) Article)
 updateArticle token slug arg = runExceptT $ do
   url <- buildUrl $ "/articles/" <> unpack slug
   let opts = defaults & authHeader token
   let body = Aeson.toJSON $ ArticleWrapper arg
-  articleWrapperArticle <$> exec (putWith opts url body)
+  article <$> exec (putWith opts url body)
 
 deleteArticle :: (RW r m) => Token -> Slug -> m (Either (Err ArticleError) ())
 deleteArticle token slug = runExceptT $ do
@@ -149,13 +149,13 @@ favoriteArticle token slug = runExceptT $ do
   url <- buildUrl $ "/articles/" <> unpack slug <> "/favorite"
   let opts = defaults & authHeader token
   let body = Aeson.toJSON $ asText ""
-  articleWrapperArticle <$> exec (postWith opts url body)
+  article <$> exec (postWith opts url body)
 
 unfavoriteArticle :: (RW r m) => Token -> Slug -> m (Either (Err ArticleError) Article)
 unfavoriteArticle token slug = runExceptT $ do
   url <- buildUrl $ "/articles/" <> unpack slug <> "/favorite"
   let opts = defaults & authHeader token
-  articleWrapperArticle <$> exec (deleteWith opts url)
+  article <$> exec (deleteWith opts url)
 
 
 
@@ -187,7 +187,7 @@ getComments mayToken slug = runExceptT $ do
 getTags :: (RW r m) => m (Either (Err Text) (Set Tag))
 getTags = runExceptT $ do
   url <- buildUrl "/tags"
-  tagsWrapperTags <$> exec (get url)
+  tags <$> exec (get url)
   
   
 

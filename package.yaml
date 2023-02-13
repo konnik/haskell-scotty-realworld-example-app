@@ -58,6 +58,7 @@ library:
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
   - -Wredundant-constraints
+  - -Wwarn=name-shadowing
 executables:
   realworld-exe:
     main: Main.hs

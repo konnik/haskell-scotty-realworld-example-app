@@ -1,3 +1,8 @@
+{-# LANGUAGE DuplicateRecordFields #-}
+-- {-# LANGUAGE OverloadedRecordDot #-}
+-- {-# LANGUAGE NoFieldSelectors #-}
+{-# LANGUAGE DeriveGeneric #-}
+
 module Feature.Article.Types where
 
 import ClassyPrelude
@@ -5,65 +10,77 @@ import Feature.User.Types
 
 import Database.PostgreSQL.Simple.Types
 import Database.PostgreSQL.Simple.FromRow
-import Platform.AesonUtil
+import Data.Aeson.Types (FromJSON, ToJSON)
 
 type Slug = Text
 
 type Tag = Text
 
 data ArticleFilter = ArticleFilter
-  { articleFilterTag :: Maybe Text
-  , articleFilterAuthor :: Maybe Text
-  , articleFilterFavoritedBy :: Maybe Text
-  } deriving (Eq, Show)
+  { tag :: Maybe Text
+  , author :: Maybe Text
+  , favoritedBy :: Maybe Text
+  } deriving (Eq, Show, Generic)
+
+instance ToJSON ArticleFilter
+instance FromJSON ArticleFilter
+
 
 data Article = Article
-  { articleSlug :: Slug
-  , articleTitle :: Text
-  , articleDescription :: Text
-  , articleBody :: Text
-  , articleTagList :: [Tag]
-  , articleCreatedAt :: UTCTime
-  , articleUpdatedAt :: UTCTime
-  , articleFavorited :: Bool
-  , articleFavoritesCount :: Int
-  , articleAuthor :: Profile
-  } deriving (Eq, Show)
+  { slug :: Slug
+  , title :: Text
+  , description :: Text
+  , body :: Text
+  , tagList :: [Tag]
+  , createdAt :: UTCTime
+  , updatedAt :: UTCTime
+  , favorited :: Bool
+  , favoritesCount :: Int
+  , author :: Profile
+  } deriving (Eq, Show, Generic)
+
+instance ToJSON Article
+instance FromJSON Article
 
 data CreateArticle = CreateArticle
-  { createArticleTitle :: Text
-  , createArticleDescription :: Text
-  , createArticleBody :: Text
-  , createArticleTagList :: [Tag]
-  } deriving (Eq, Show)
+  { title :: Text
+  , description :: Text
+  , body :: Text
+  , tagList :: [Tag]
+  } deriving (Eq, Show, Generic)
+
+instance ToJSON CreateArticle
+instance FromJSON CreateArticle
 
 data UpdateArticle = UpdateArticle
-  { updateArticleTitle :: Maybe Text
-  , updateArticleDescription :: Maybe Text
-  , updateArticleBody :: Maybe Text
-  } deriving (Eq, Show)
+  { title :: Maybe Text
+  , description :: Maybe Text
+  , body :: Maybe Text
+  } deriving (Eq, Show, Generic)
+
+instance ToJSON UpdateArticle
+instance FromJSON UpdateArticle
 
 data ArticleError
   = ArticleErrorNotFound Slug
   | ArticleErrorNotAllowed Slug
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
-newtype ArticleWrapper a = ArticleWrapper { articleWrapperArticle :: a } deriving (Eq, Show)
-data ArticlesWrapper a = ArticlesWrapper { articlesWrapperArticles :: [a], articlesWrapperArticlesCount :: Int } deriving (Eq, Show)
-newtype TagsWrapper a = TagsWrapper { tagsWrapperTags :: a } deriving (Eq, Show)
+instance ToJSON ArticleError
+instance FromJSON ArticleError
 
--- * Instances
+newtype ArticleWrapper a = ArticleWrapper { article :: a } deriving (Eq, Show, Generic) 
+instance (ToJSON a) => ToJSON (ArticleWrapper a)
+instance (FromJSON a) => FromJSON (ArticleWrapper a)
 
-$(commonJSONDeriveMany
-  [ ''ArticleFilter
-  , ''Article
-  , ''CreateArticle
-  , ''UpdateArticle
-  , ''ArticleError
-  , ''ArticleWrapper
-  , ''ArticlesWrapper
-  , ''TagsWrapper
-  ])
+data ArticlesWrapper a = ArticlesWrapper { articles :: [a], articlesCount :: Int } deriving (Eq, Show, Generic)
+instance (ToJSON a) => ToJSON (ArticlesWrapper a)
+instance (FromJSON a) => FromJSON (ArticlesWrapper a)
+
+newtype TagsWrapper a = TagsWrapper { tags :: a } deriving (Eq, Show, Generic)
+instance (ToJSON a) => ToJSON (TagsWrapper a)
+instance (FromJSON a) => FromJSON (TagsWrapper a)
+
 
 instance FromRow Article where
   fromRow = Article 

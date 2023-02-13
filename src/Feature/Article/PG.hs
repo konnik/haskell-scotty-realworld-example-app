@@ -9,20 +9,28 @@ import Database.PostgreSQL.Simple.SqlQQ
 import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.Types
 
+
 addArticle :: PG r m => UserId -> CreateArticle -> Slug -> m ()
 addArticle uId param slug =
   void . withConn $ \conn -> execute conn qry 
-    ( slug, createArticleTitle param, createArticleDescription param
-    , createArticleBody param, uId, PGArray $ createArticleTagList param
+    ( slug, _title, _desc
+    , _body, uId, PGArray $ _taglist
     )
   where
+    (CreateArticle _title _ _ _) = param
+    (CreateArticle _ _desc _ _) = param
+    (CreateArticle _ _ _body _) = param
+    (CreateArticle _ _ _ _taglist) = param
     qry = "insert into articles (slug, title, description, body, created_at, updated_at, author_id, tags) \
           \values (?, ?, ?, ?, now(), now(), ?, ?)"
 
 updateArticleBySlug :: PG r m => Slug -> UpdateArticle -> Slug -> m ()
 updateArticleBySlug slug param newSlug =
-  void . withConn $ \conn -> execute conn qry (newSlug, updateArticleTitle param, updateArticleDescription param, updateArticleBody param, slug)
+  void . withConn $ \conn -> execute conn qry (newSlug, _title, _desc, _body, slug)
   where
+    (UpdateArticle _title _ _) = param
+    (UpdateArticle _ _desc _) = param
+    (UpdateArticle _ _ _body) = param
     qry = "update articles \
           \set slug = ?, title = coalesce(?, title), description = coalesce(?, description), \
           \    body = coalesce(?, body), updated_at = now() \
@@ -116,15 +124,18 @@ findArticles maySlug mayFollowing mayCurrentUser articleFilter pagination =
           -- ^ 1 slot for slug
           , In $ maybeToList $ mayFollowing
           -- ^ 1 slot for following
-          , PGArray $ maybeToList $ articleFilterTag articleFilter
+          , PGArray $ maybeToList $ _tag
           -- ^ 1 slot for tags
-          , In $ maybeToList $ articleFilterAuthor articleFilter
+          , In $ maybeToList $ _author
           -- ^ 1 slot for author
-          , articleFilterFavoritedBy articleFilter, articleFilterFavoritedBy articleFilter
+          , _fav, _fav
           -- ^ 2 slots for favorited by user name
           , paginationLimit pagination, paginationOffset pagination
           -- ^ 2 slot for limit & offset
           )
+    (ArticleFilter _tag _ _) = articleFilter 
+    (ArticleFilter _ _author _) = articleFilter 
+    (ArticleFilter _ _ _fav) = articleFilter 
           
 isArticleExist :: PG r m => Slug -> m Bool
 isArticleExist slug = do
