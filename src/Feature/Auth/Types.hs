@@ -1,8 +1,10 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Feature.Auth.Types where
 
 import ClassyPrelude
 
-import Platform.AesonUtil
+
+import Data.Aeson (ToJSON, FromJSON)
 
 type Token = Text
 type UserId = Integer
@@ -13,8 +15,8 @@ data TokenError
   | TokenErrorNotFound
   | TokenErrorExpired
   | TokenErrorMalformed String
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
-$(commonJSONDeriveMany
-  [ ''TokenError
-  ])
+
+instance ToJSON TokenError
+instance FromJSON TokenError
